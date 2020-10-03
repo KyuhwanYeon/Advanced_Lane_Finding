@@ -34,7 +34,7 @@ def calibration():
             imgpoints.append(corners)
             objpoints.append(objp)
             cv2.drawChessboardCorners(img, (nx, ny), corners, ret)
-            plt.imshow(img)
+            # plt.imshow(img)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return mtx, dist
 
@@ -43,5 +43,5 @@ def cal_undistort(img, mtx, dist):
     return undist
 
 
-if __name__ == '__main__':
-    matrix, distortion = calibration()
+# if __name__ == '__main__':
+#     matrix, distortion = calibration()
