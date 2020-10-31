@@ -34,14 +34,34 @@ def calibration():
             imgpoints.append(corners)
             objpoints.append(objp)
             cv2.drawChessboardCorners(img, (nx, ny), corners, ret)
-            # plt.imshow(img)
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return mtx, dist
 
 def cal_undistort(img, mtx, dist):
     undist = cv2.undistort(img, mtx, dist, None, mtx)
     return undist
+def unwarp(img, src, dst, img_size):
+    M = cv2.getPerspectiveTransform(src, dst)
+    warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)
+    M_for_rewarp = cv2.getPerspectiveTransform(dst, src)
+    return warped, M, M_for_rewarp
+    
+        
 
-
-# if __name__ == '__main__':
-#     matrix, distortion = calibration()
+if __name__ == '__main__':
+    img = cv2.imread(images[0])
+    matrix, distortion = calibration()
+    undistort_img = cal_undistort(img, matrix, distortion)
+    c_rows, c_cols = undistort_img.shape[:2]
+    s_LTop2, s_RTop2 = [917, 15], [1249, 46]
+    s_LBot2, s_RBot2 = [917, 454], [1249, 432]
+    src = np.float32([s_LBot2, s_LTop2, s_RTop2, s_RBot2])
+    dst = np.float32([(0, 720), (0, 0), (720, 0), (720, 720)])
+    unwarp_img , M, M_for_warp = unwarp(undistort_img, src, dst, (720, 720))
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(24, 3))
+    ax1.imshow(img)
+    ax1.set_title('original Image', fontsize=10)
+    ax2.imshow(undistort_img)
+    ax2.set_title('undistortion', fontsize=10)
+    ax3.imshow(unwarp_img, cmap='gray')
+    ax3.set_title('warp_img', fontsize=10)       
