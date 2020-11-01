@@ -7,7 +7,7 @@ from calibration import calibration, cal_undistort, unwarp
 from threshold_filter import grad_color_filter
 from find_lane import fit_polynomial, Line, find_left_right_lanes, draw_lane
 input_type = 'video'
-img_file_name = 'test_images/test2.jpg'
+img_file_name = 'test_images/test4.jpg'
 video_file_name = 'project_video.mp4'
 left_line = Line()
 right_line = Line()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         src = np.float32([left_bottom, left_top, right_top, right_bottom])
         dst = np.float32([(170, 720), (170, 0), (550, 0), (550, 720)])
         unwarp_img , M, M_for_warp= unwarp(filtered_img, src, dst, (720, 720))
-        left_fitx, right_fitx, ploty, lane_img = find_left_right_lanes(unwarp_img, left_line, right_line)
+        lane_img = find_left_right_lanes(unwarp_img, left_line, right_line)
         result, fill_lane_img = draw_lane(lane_img, left_line, right_line)
         rewarp_img = cv2.warpPerspective(fill_lane_img, M_for_warp, (col_len, row_len))
         result = cv2.addWeighted(undistort_img, 1, rewarp_img, 0.3, 0)
@@ -68,11 +68,16 @@ if __name__ == '__main__':
             src = np.float32([left_bottom, left_top, right_top, right_bottom])
             dst = np.float32([(170, 720), (170, 0), (550, 0), (550, 720)])
             unwarp_img , M, M_for_warp= unwarp(filtered_img, src, dst, (720, 720))
-            left_fitx, right_fitx, ploty, lane_img = find_left_right_lanes(unwarp_img, left_line, right_line)
+            lane_img = find_left_right_lanes(unwarp_img, left_line, right_line)
             result, fill_lane_img = draw_lane(lane_img, left_line, right_line)
             rewarp_img = cv2.warpPerspective(fill_lane_img, M_for_warp, (col_len, row_len))
             result = cv2.addWeighted(undistort_img, 1, rewarp_img, 0.3, 0)
-            cv2.imshow('advanced_lane_detection', result)
+            
+            
+            info = np.zeros_like(result)
+            info[5:200, 5:600] = (255, 255, 255)
+            info = cv2.addWeighted(result, 1, info, 0.2, 0)
+            cv2.imshow('advanced_lane_detection', info)
                   
 
             # out.write(frame)

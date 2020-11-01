@@ -86,7 +86,7 @@ def color_filter(image):
     R_binary = np.zeros_like(R)
     R_binary[(R > R_thresh[0]) & (R <= R_thresh[1])] = 1
     B = image[:, :, 2]
-    B_thresh = (145, 200)
+    B_thresh = (200, 210)
     B_binary = np.zeros_like(B)
     B_binary[(B > B_thresh[0]) & (B <= B_thresh[1])] = 1
     hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
@@ -99,7 +99,7 @@ def color_filter(image):
     H_bianry[(H > H_thresh[0]) & (H <= H_thresh[1])] = 1
     S_binary[(S > S_thresh[0]) & (S <= S_thresh[1])] = 1
     color_combined = np.zeros_like(S_binary)
-    color_combined[(B_binary == 1) | (R_binary == 1) | ((H_bianry == 1)&(S_binary == 1))] = 1
+    color_combined[ (R_binary == 1) | ((H_bianry == 1)&(S_binary == 1))] = 1
     #color_combined[(H_bianry == 1)&(S_binary == 1)] = 1
     return color_combined
 

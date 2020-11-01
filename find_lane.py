@@ -31,7 +31,37 @@ class Line:
         self.curvature = None
         self.deviation = None
 
+def rad_of_curvature(left_line, right_line):
+    #Calculate curvature
 
+    ploty = left_line.ally
+    leftx, rightx = left_line.allx, right_line.allx
+
+    leftx = leftx[::-1]  # Reverse to match top-to-bottom in y
+    rightx = rightx[::-1]  # Reverse to match top-to-bottom in y
+
+    # Convert pixel to meter
+    ym_per_pix = 30 / 720  # meters per pixel in y dimension
+    xm_per_pix = 3.7/700 # meters per pixel in x dimension
+
+    # Define y-value where we want radius of curvature
+    # the maximum y-value, corresponding to the bottom of the image
+    y_eval = np.max(ploty)
+
+    left_fit_cr = np.polyfit(ploty * ym_per_pix, leftx * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty * ym_per_pix, rightx * xm_per_pix, 2)
+    # Calculate the new radii of curvature
+    left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * left_fit_cr[0])
+    right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * right_fit_cr[0])
+    # Add curvature to lines
+    left_line.radius_of_curvature = left_curverad
+    right_line.radius_of_curvature = right_curverad
+    print("left curve rad: ", left_curverad)
+    print("right curve rad: ", right_curverad)
+    
+    
 def find_lane_pixels(binary_warped):
     # Take a histogram of the bottom half of the image
     histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
@@ -47,7 +77,7 @@ def find_lane_pixels(binary_warped):
     # Choose the number of sliding windows
     nwindows = 12
     # Set the width of the windows +/- margin
-    margin = 70
+    margin = 50
     # Set minimum number of pixels found to recenter window
     minpix = 50
 
@@ -113,10 +143,19 @@ def find_lane_pixels(binary_warped):
 
     return leftx, lefty, rightx, righty, out_img
 
+def moving_avg_filter(lines, pre_lines):
+    lines = np.squeeze(lines)
+    avg_line = np.zeros((720))
 
-def fit_polynomial(binary_warped, left_line, right_line):
-    # Find our lane pixels first
-    leftx, lefty, rightx, righty, out_img = find_lane_pixels(binary_warped)
+    for ii, line in enumerate(reversed(lines)):
+        if ii == pre_lines:
+            break
+        avg_line += line
+    avg_line = avg_line / pre_lines
+    return avg_line
+
+def fit_polynomial(binary_warped, left_line, right_line, leftx, lefty, rightx, righty):
+
 
     # Fit a second order polynomial to each using `np.polyfit`
     left_fit = np.polyfit(lefty, leftx, 2)
@@ -135,44 +174,34 @@ def fit_polynomial(binary_warped, left_line, right_line):
         print('The function failed to fit a line!')
         left_fitx = 1*ploty**2 + 1*ploty
         right_fitx = 1*ploty**2 + 1*ploty
-    
-    left_line.allx = left_fitx
-    left_line.ally = ploty
-    right_line.allx = right_fitx
-    right_line.ally = ploty
-    left_line.prevx.append(left_fitx)
-    right_line.prevx.append(right_fitx)
-    ## Visualization ##
-    # Colors in the left and right lane regions
-    out_img[lefty, leftx] = [255, 0, 0]
-    out_img[righty, rightx] = [0, 0, 255]
 
-    # Plots the left and right polynomials on the lane lines
-    # plt.plot(left_fitx, ploty, 20, color='yellow')
-    # plt.plot(right_fitx, ploty, 20, color='yellow')
-    
-    
-    
-    # if(len(leftlanes_x)>1 and len(rightlanes_x)>1): # exception code for empty lanes
-    #     # fitting to 1 order poly
-    #     coeff_leftlanes = np.polyfit(leftlanes_x,leftlanes_y,1)
-    #     coeff_rightlanes = np.polyfit(rightlanes_x,rightlanes_y,1)
-    #     leftlane_x1 = vertices[0][0][0]
-    #     leftlane_x2 = vertices[0][1][0]
-    #     rightlane_x1 = vertices[0][2][0]
-    #     rightlane_x2 = vertices[0][3][0]
-    #     # connects the vertices!
-    #     leftlane_y1 = coeff_leftlanes[0]*leftlane_x1 + coeff_leftlanes[1]
-    #     leftlane_y2 = coeff_leftlanes[0]*leftlane_x2 + coeff_leftlanes[1]
-    #     rightlane_y1 = coeff_rightlanes[0]*rightlane_x1 + coeff_rightlanes[1]
-    #     rightlane_y2 = coeff_rightlanes[0]*rightlane_x2 + coeff_rightlanes[1]
-    #     # draw line
-    #     cv2.line(img, (int(leftlane_x1), int(leftlane_y1)), (int(leftlane_x2), int(leftlane_y2)), color, thickness)
-    #     cv2.line(img, (int(rightlane_x1), int(rightlane_y1)), (int(rightlane_x2), int(rightlane_y2)), color, thickness)
-    return left_fitx, right_fitx, ploty, out_img
+    return left_fitx, right_fitx, ploty
 
 def find_left_right_lanes(img, left_line, right_line):
-    return fit_polynomial(img, left_line, right_line)
+    # find lane by sliding window
+    leftx, lefty, rightx, righty, out_img = find_lane_pixels(img)
+    # fit the lane with polynomials
+    left_fitx, right_fitx, ploty = fit_polynomial(img, left_line, right_line, leftx, lefty, rightx, righty)
+    left_line.prevx.append(left_fitx)
+    right_line.prevx.append(right_fitx)   
+    if len(left_line.prevx) < 10:    
+        left_line.allx = left_fitx
+        left_line.ally = ploty
+        right_line.allx = right_fitx
+        right_line.ally = ploty
+    else:
+        left_avg = moving_avg_filter(left_line.prevx, 10)
+        right_avg = moving_avg_filter(right_line.prevx, 10)
+        left_fitx_filtered, right_fitx_filtered, ploty = fit_polynomial(img, left_line, right_line, left_avg, ploty, right_avg, ploty)
+        left_line.allx = left_fitx_filtered
+        left_line.ally = ploty
+        right_line.allx = right_fitx_filtered
+        right_line.ally = ploty    
+    rad_of_curvature(left_line, right_line)
+   
+    out_img[lefty, leftx] = [255, 0, 0]
+    out_img[righty, rightx] = [0, 0, 255]
+    return out_img
     # if left_line.detected == False:
     #     return fit_polynomial(img, left_line, right_line)
     # else:
@@ -228,9 +257,7 @@ if __name__ == '__main__':
     warp_img = unwarp(filtered_img, src, dst, (720, 720))
     
 
-    left_fitx, right_fitx, ploty, out_img = fit_polynomial(warp_img)
-    
-    plt.imshow(out_img)
+    # plt.imshow(out_img)
 
 # f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(24, 3))
 # ax1.imshow(img)
