@@ -7,7 +7,7 @@ from calibration import calibration, cal_undistort, unwarp
 from threshold_filter import grad_color_filter
 from find_lane import fit_polynomial, Line, find_left_right_lanes, draw_lane
 input_type = 'video'
-img_file_name = 'test_images/test4.jpg'
+img_file_name = 'test_images/test5.jpg'
 video_file_name = 'project_video.mp4'
 left_line = Line()
 right_line = Line()
@@ -16,10 +16,7 @@ matrix, distortion = calibration()
 print("Complete calibration")
 if __name__ == '__main__':
     if input_type == 'image':
-        img = cv2.imread(img_file_name)
-        
-        
-        #undistort the image
+        img = mpimg.imread(img_file_name)
         undistort_img = cal_undistort(img, matrix, distortion)
         print("Complete undistortion")
         filtered_img = grad_color_filter(undistort_img)
@@ -52,14 +49,13 @@ if __name__ == '__main__':
         ax7.set_title('7. warp', fontsize=10) 
         ax8.imshow(result)
         ax8.set_title('8. final_result', fontsize=10) 
+        plt.show()
         # ax5.plot(left_fitx, ploty, 20, color='yellow')
         # ax5.plot(right_fitx, ploty, 20, color='yellow')
-        
     elif input_type == 'video':
         cap = cv2.VideoCapture(video_file_name)
         while (cap.isOpened()):
             _, frame = cap.read()
-             #undistort the image
             undistort_img = cal_undistort(frame, matrix, distortion)
             filtered_img = grad_color_filter(undistort_img)
             row_len, col_len = filtered_img.shape[:2]
@@ -71,12 +67,20 @@ if __name__ == '__main__':
             lane_img = find_left_right_lanes(unwarp_img, left_line, right_line)
             result, fill_lane_img = draw_lane(lane_img, left_line, right_line)
             rewarp_img = cv2.warpPerspective(fill_lane_img, M_for_warp, (col_len, row_len))
-            result = cv2.addWeighted(undistort_img, 1, rewarp_img, 0.3, 0)
-            
-            
+            result = cv2.addWeighted(undistort_img, 1, rewarp_img, 0.3, 0)            
+            # print curvature
             info = np.zeros_like(result)
-            info[5:200, 5:600] = (255, 255, 255)
+            info[5:200, 5:500] = (255, 255, 255)
             info = cv2.addWeighted(result, 1, info, 0.2, 0)
+            curvature_l = 'Radius of curvature (left_lane): ' + str(format(left_line.radius_of_curvature, ".2f")) + ' [m]'
+            curvature_r = 'Radius of curvature (right_lane): ' + str(format(right_line.radius_of_curvature, ".2f")) + ' [m]'
+            cv2.putText(info, curvature_l, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (100, 100, 100), 1)
+            cv2.putText(info, curvature_r, (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (100, 100, 100), 1)
+            # print veh deviation
+            center_lane = (right_line.startx + left_line.startx) / 2
+            center_img = 720 / 2
+            deviation = 'Deviation of the vehicle: ' + str(format((center_img-center_lane) * 3.7/700, ".3f"))+ ' [m]'
+            cv2.putText(info, deviation, (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (100, 100, 100), 1)
             cv2.imshow('advanced_lane_detection', info)
                   
 
@@ -89,9 +93,3 @@ if __name__ == '__main__':
                 break
         cap.release()
         cv2.destroyAllWindows()                
-        # plt.imshow(img)
-        # plt.show()
-        # plt.imshow(undistort_img)
-        # plt.show()
-        # plt.imshow(filtered_img)
-        # plt.show()

@@ -58,9 +58,7 @@ def rad_of_curvature(left_line, right_line):
     # Add curvature to lines
     left_line.radius_of_curvature = left_curverad
     right_line.radius_of_curvature = right_curverad
-    print("left curve rad: ", left_curverad)
-    print("right curve rad: ", right_curverad)
-    
+
     
 def find_lane_pixels(binary_warped):
     # Take a histogram of the bottom half of the image
@@ -198,7 +196,8 @@ def find_left_right_lanes(img, left_line, right_line):
         right_line.allx = right_fitx_filtered
         right_line.ally = ploty    
     rad_of_curvature(left_line, right_line)
-   
+    left_line.startx, right_line.startx = left_line.allx[len(left_line.allx) - 1], right_line.allx[len(right_line.allx) - 1]
+    left_line.endx, right_line.endx = left_line.allx[0], right_line.allx[0]
     out_img[lefty, leftx] = [255, 0, 0]
     out_img[righty, rightx] = [0, 0, 255]
     return out_img
