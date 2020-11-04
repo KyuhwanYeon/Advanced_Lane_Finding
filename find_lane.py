@@ -6,6 +6,7 @@ import matplotlib.image as mpimg
 from calibration import calibration, cal_undistort, unwarp
 from threshold_filter import grad_color_filter
 
+matrix, distortion = calibration()
 class Line:
     def __init__(self):
         # was the line detected in the last iteration?
@@ -30,6 +31,8 @@ class Line:
         self.road_inf = None
         self.curvature = None
         self.deviation = None
+left_line = Line()
+right_line = Line()
 
 def rad_of_curvature(left_line, right_line):
     #Calculate curvature
@@ -240,10 +243,7 @@ def draw_lane(img, left_line, right_line, lane_color=(255, 0, 255), road_color=(
 if __name__ == '__main__':
     input_type = 'image'
     img_file_name = 'test_images/test3.jpg'
-    img = cv2.imread(img_file_name)
-    matrix, distortion = calibration()
-    print("Complete calibration")
-    #undistort the image
+    img = mpimg.imread(img_file_name)
     undistort_img = cal_undistort(img, matrix, distortion)
     print("Complete undistortion")
     filtered_img = grad_color_filter(undistort_img)
@@ -253,10 +253,13 @@ if __name__ == '__main__':
     left_bottom, right_bottom = [200, row_len], [1200, row_len]
     src = np.float32([left_bottom, left_top, right_top, right_bottom])
     dst = np.float32([(170, 720), (170, 0), (550, 0), (550, 720)])
-    warp_img = unwarp(filtered_img, src, dst, (720, 720))
+    unwarp_img , M, M_for_warp= unwarp(filtered_img, src, dst, (720, 720))
+    lane_img = find_left_right_lanes(unwarp_img, left_line, right_line)
     
-
-    # plt.imshow(out_img)
+    f, ax1 = plt.subplots(1, 1, figsize=(12, 8))
+    ax1.imshow(lane_img)
+    ax1.set_title('sliding window', fontsize=10)
+    plt.show()
 
 # f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(24, 3))
 # ax1.imshow(img)
