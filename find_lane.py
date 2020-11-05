@@ -191,8 +191,8 @@ def find_left_right_lanes(img, left_line, right_line):
         right_line.allx = right_fitx
         right_line.ally = ploty
     else:
-        left_avg = moving_avg_filter(left_line.prevx, 10)
-        right_avg = moving_avg_filter(right_line.prevx, 10)
+        left_avg = moving_avg_filter(left_line.prevx, 3)
+        right_avg = moving_avg_filter(right_line.prevx, 3)
         left_fitx_filtered, right_fitx_filtered, ploty = fit_polynomial(img, left_line, right_line, left_avg, ploty, right_avg, ploty)
         left_line.allx = left_fitx_filtered
         left_line.ally = ploty
